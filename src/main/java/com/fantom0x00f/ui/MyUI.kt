@@ -1,6 +1,7 @@
 package com.fantom0x00f.ui
 
 import com.fantom0x00f.dto.Event
+import com.fantom0x00f.dto.Message
 import com.fantom0x00f.echo.EchoWSHandler
 import com.vaadin.annotations.Push
 import com.vaadin.annotations.Theme
@@ -26,15 +27,20 @@ open class MyUI : UI() {
         val name = TextField("Name")
         val greetButton = Button("Greet")
 
-        greetButton.addClickListener({ e -> Notification.show("Hi " + name.value) })
+        greetButton.addClickListener {
+            wsHandler.sendMessage(Message(3, name.value))
+            Notification.show("Message sended ")
+        }
         textArea.setWidth(100.0f, Sizeable.Unit.PERCENTAGE)
         content = VerticalLayout(textArea, name, greetButton)
         wsHandler.subscribeOnEvents(this::receiveEvent)
     }
 
     fun receiveEvent(event: Event) {
-        access { textArea.value += "\n" + event.toString() }
-
+        access {
+            textArea.value += "\n" + event.toString()
+            textArea.setCursorPosition(textArea.value.length);
+        }
     }
 
 }

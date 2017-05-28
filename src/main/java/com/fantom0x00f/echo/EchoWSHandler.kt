@@ -16,12 +16,12 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 @Service
 open class EchoWSHandler : TextWebSocketHandler() {
 
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(EchoWSHandler::class.java)
-    }
+    private val logger: Logger = LoggerFactory.getLogger(EchoWSHandler::class.java)
+
+    private val establishedConnections = ArrayList<WebSocketSession>()
 
     @Autowired
-    lateinit var echoService: EchoService
+    private lateinit var echoService: EchoService
 
     @Value("\${agent.secret.onconnection}")
     private lateinit var expectedSecret: String
@@ -30,7 +30,7 @@ open class EchoWSHandler : TextWebSocketHandler() {
     private lateinit var responseSecret: String
 
     @Autowired
-    lateinit var jacksonObjectMapper: ObjectMapper
+    private lateinit var jacksonObjectMapper: ObjectMapper
 
     private var callbacks = ArrayList<(event: Event) -> Unit>()
 
@@ -41,27 +41,35 @@ open class EchoWSHandler : TextWebSocketHandler() {
 
         val event = jacksonObjectMapper.readValue(messagePayload, Event::class.java)
         pushEvent(event)
-
-        val messageResponse = Message()
-        messageResponse.Type = (event.Type ?: 0) + 1
-        val response = echoService.getResponse(event.Message ?: "")
-        messageResponse.Message = response
-
-        val writeValueAsString = jacksonObjectMapper.writeValueAsString(messageResponse)
-        logger.info("Responce: $writeValueAsString")
-        session.sendMessage(TextMessage(writeValueAsString))
     }
 
-    override fun afterConnectionEstablished(session: WebSocketSession?) {
+    override fun afterConnectionEstablished(session: WebSocketSession) {
         logger.debug("Opened new session $session")
+        establishedConnections.add(session)
     }
 
-    override fun handleTransportError(session: WebSocketSession?, exception: Throwable?) {
-        session?.close(CloseStatus.SERVER_ERROR)
+    override fun handleTransportError(session: WebSocketSession, exception: Throwable?) {
+        session.close(CloseStatus.SERVER_ERROR)
+    }
+
+    override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus?) {
+        logger.debug("Close session $session")
+        establishedConnections.remove(session)
     }
 
     fun subscribeOnEvents(callback: (event: Event) -> Unit) {
         callbacks.add(callback)
+    }
+
+    fun sendMessage(message: Message) {
+        if (establishedConnections.size == 1) {
+            val writeValueAsString = jacksonObjectMapper.writeValueAsString(message)
+            logger.info("Send message: $writeValueAsString")
+
+            establishedConnections[0].sendMessage(TextMessage(writeValueAsString))
+        } else {
+            logger.info("Can't send message, because connection size = ${establishedConnections.size}")
+        }
     }
 
     private fun pushEvent(event: Event) = callbacks.forEach { it.invoke(event) }
@@ -71,6 +79,7 @@ open class EchoWSHandler : TextWebSocketHandler() {
         if (!attributes.containsKey("Verified")) {
             if (message != expectedSecret) {
                 session.close()
+                establishedConnections.remove(session)
                 logger.error("Bad secret")
                 return false
             }
