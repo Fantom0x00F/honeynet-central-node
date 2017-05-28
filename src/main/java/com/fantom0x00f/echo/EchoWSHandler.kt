@@ -1,5 +1,8 @@
 package com.fantom0x00f.echo
 
+import com.fantom0x00f.dto.Event
+import com.fantom0x00f.dto.Message
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,6 +29,9 @@ open class EchoWSHandler : TextWebSocketHandler() {
     @Value("\${agent.secret.response}")
     private lateinit var responseSecret: String
 
+    @Autowired
+    lateinit var jacksonObjectMapper: ObjectMapper
+
     override fun handleTextMessage(session: WebSocketSession?, message: TextMessage?) {
         val messagePayload = message?.payload ?: "error"
         val attributes = session?.attributes!!
@@ -40,9 +46,17 @@ open class EchoWSHandler : TextWebSocketHandler() {
             return
         }
         logger.info("Received message $messagePayload")
-        val response = echoService.getResponse(messagePayload)
-        logger.info("Prepared response $messagePayload")
-        session.sendMessage(TextMessage(response))
+        val event = jacksonObjectMapper.readValue(messagePayload, Event::class.java)
+        logger.info("Received ${event.Message}")
+
+        val messageResponse = Message()
+        messageResponse.Type = (event.Type ?: 0) + 1
+        val response = echoService.getResponse(event.Message ?: "")
+        messageResponse.Message = response
+
+        val writeValueAsString = jacksonObjectMapper.writeValueAsString(messageResponse)
+        logger.info("Responce: $writeValueAsString")
+        session.sendMessage(TextMessage(writeValueAsString))
     }
 
     override fun afterConnectionEstablished(session: WebSocketSession?) {
