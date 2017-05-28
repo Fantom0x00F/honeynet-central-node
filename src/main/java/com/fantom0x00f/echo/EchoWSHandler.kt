@@ -32,22 +32,15 @@ open class EchoWSHandler : TextWebSocketHandler() {
     @Autowired
     lateinit var jacksonObjectMapper: ObjectMapper
 
-    override fun handleTextMessage(session: WebSocketSession?, message: TextMessage?) {
+    private var callbacks = ArrayList<(event: Event) -> Unit>()
+
+    override fun handleTextMessage(session: WebSocketSession, message: TextMessage?) {
         val messagePayload = message?.payload ?: "error"
-        val attributes = session?.attributes!!
-        if (!attributes.containsKey("Verified")) {
-            if (messagePayload != expectedSecret) {
-                session.close()
-                logger.error("Bad secret")
-                return
-            }
-            attributes["Verified"] = "true"
-            session.sendMessage(TextMessage(responseSecret))
+        if (!verifyConnection(session, messagePayload))
             return
-        }
-        logger.info("Received message $messagePayload")
+
         val event = jacksonObjectMapper.readValue(messagePayload, Event::class.java)
-        logger.info("Received ${event.Message}")
+        pushEvent(event)
 
         val messageResponse = Message()
         messageResponse.Type = (event.Type ?: 0) + 1
@@ -65,5 +58,26 @@ open class EchoWSHandler : TextWebSocketHandler() {
 
     override fun handleTransportError(session: WebSocketSession?, exception: Throwable?) {
         session?.close(CloseStatus.SERVER_ERROR)
+    }
+
+    fun subscribeOnEvents(callback: (event: Event) -> Unit) {
+        callbacks.add(callback)
+    }
+
+    private fun pushEvent(event: Event) = callbacks.forEach { it.invoke(event) }
+
+    private fun verifyConnection(session: WebSocketSession, message: String): Boolean {
+        val attributes = session.attributes!!
+        if (!attributes.containsKey("Verified")) {
+            if (message != expectedSecret) {
+                session.close()
+                logger.error("Bad secret")
+                return false
+            }
+            attributes["Verified"] = "true"
+            session.sendMessage(TextMessage(responseSecret))
+            return false
+        }
+        return true
     }
 }
