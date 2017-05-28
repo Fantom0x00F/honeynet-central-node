@@ -1,7 +1,7 @@
 package com.fantom0x00f.echo
 
+import com.fantom0x00f.dto.Command
 import com.fantom0x00f.dto.Event
-import com.fantom0x00f.dto.Message
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -61,14 +61,14 @@ open class EchoWSHandler : TextWebSocketHandler() {
         callbacks.add(callback)
     }
 
-    fun sendMessage(message: Message) {
+    fun sendMessage(command: Command) {
         if (establishedConnections.size == 1) {
-            val writeValueAsString = jacksonObjectMapper.writeValueAsString(message)
-            logger.info("Send message: $writeValueAsString")
+            val writeValueAsString = jacksonObjectMapper.writeValueAsString(command)
+            logger.info("Send command: $writeValueAsString")
 
             establishedConnections[0].sendMessage(TextMessage(writeValueAsString))
         } else {
-            logger.info("Can't send message, because connection size = ${establishedConnections.size}")
+            logger.info("Can't send command, because connection size = ${establishedConnections.size}")
         }
     }
 
