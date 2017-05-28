@@ -61,7 +61,7 @@ open class EchoWSHandler : TextWebSocketHandler() {
         callbacks.add(callback)
     }
 
-    fun sendMessage(command: Command) {
+    fun sendCommand(command: Command) {
         if (establishedConnections.size == 1) {
             val writeValueAsString = jacksonObjectMapper.writeValueAsString(command)
             logger.info("Send command: $writeValueAsString")
