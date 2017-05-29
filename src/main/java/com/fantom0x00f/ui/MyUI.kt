@@ -1,7 +1,7 @@
 package com.fantom0x00f.ui
 
+import com.fantom0x00f.agents.AgentService
 import com.fantom0x00f.dto.*
-import com.fantom0x00f.echo.EchoWSHandler
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.vaadin.annotations.Push
 import com.vaadin.annotations.Theme
@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 open class MyUI : UI() {
 
     @Autowired
-    lateinit var wsHandler: EchoWSHandler
+    lateinit var agentService: AgentService
 
     @Autowired
     private lateinit var jacksonObjectMapper: ObjectMapper
@@ -33,11 +33,40 @@ open class MyUI : UI() {
 
         textArea.setWidth(100.0f, Sizeable.Unit.PERCENTAGE)
 
-        content = VerticalLayout(textArea, HorizontalLayout(
-                buildCommandsPanel(),
-                buildConfigurationPanel()
-        ))
-        wsHandler.subscribeOnEvents(this::receiveEvent)
+        content = VerticalLayout(textArea, buildAgentsList())
+        agentService.subscribeOnEvents(this::receiveEvent)
+    }
+
+    fun buildAgentsList(): VerticalLayout {
+        val verticalLayout = VerticalLayout()
+        for (agent in agentService.getAgents()) {
+            val agentPanel = Panel("").apply {
+                setSizeUndefined()
+                caption = "${agent.name} / ${agent.containerName}"
+            }
+            agentPanel.content = HorizontalLayout().apply {
+                val startContainerButton = Button("Start container")
+                val stopContainerButton = Button("Stop container")
+
+                startContainerButton.addClickListener { startContainer(agent.name) }
+                stopContainerButton.addClickListener { stopContainer(agent.name) }
+
+                val container = TextField("Container")
+                val setConfigurationButton = Button("Set container")
+                setConfigurationButton.addClickListener {
+                    agentService.sendCommand(Command(CommandTypes.SetConfiguration,
+                            jacksonObjectMapper.writeValueAsString(WorkerConfiguration(container.value, ""))), agent.name)
+                }
+
+                addComponent(startContainerButton)
+                addComponent(stopContainerButton)
+                addComponent(container)
+                addComponent(setConfigurationButton)
+            }
+
+            verticalLayout.addComponentsAndExpand(agentPanel)
+        }
+        return verticalLayout
     }
 
     fun buildCommandsPanel(): VerticalLayout {
@@ -48,11 +77,11 @@ open class MyUI : UI() {
         val stopContainerButton = Button("Stop container")
         val greetButton = Button("Send command")
 
-        startContainerButton.addClickListener { startContainer() }
-        stopContainerButton.addClickListener { stopContainer() }
+//        startContainerButton.addClickListener { startContainer() }
+//        stopContainerButton.addClickListener { stopContainer() }
 
         greetButton.addClickListener {
-            wsHandler.sendCommand(Command(Integer.parseInt(id.value), name.value))
+            //            wsHandler.sendCommand(Command(Integer.parseInt(id.value), name.value))
             Notification.show("Command sended ")
         }
         return VerticalLayout(id, name, greetButton, HorizontalLayout(startContainerButton, stopContainerButton))
@@ -66,19 +95,19 @@ open class MyUI : UI() {
         val setConfigurationButton = Button("Set configuration")
 
         getConfigurationButton.addClickListener {
-            wsHandler.sendCommand(Command(CommandTypes.GetConfiguration, ""))
+            //            wsHandler.sendCommand(Command(CommandTypes.GetConfiguration, ""))
         }
 
         setConfigurationButton.addClickListener {
-            wsHandler.sendCommand(Command(CommandTypes.SetConfiguration,
-                    jacksonObjectMapper.writeValueAsString(WorkerConfiguration(imageName.value, startparams.value))
-            ))
+            //            wsHandler.sendCommand(Command(CommandTypes.SetConfiguration,
+//                    jacksonObjectMapper.writeValueAsString(WorkerConfiguration(imageName.value, startparams.value))
+//            ))
         }
 
         return VerticalLayout(imageName, startparams, getConfigurationButton, setConfigurationButton)
     }
 
-    fun receiveEvent(event: Event) {
+    fun receiveEvent(event: Event, agentName: String) {
         access {
             if (event.Type == EventTypes.ReturnConfiguration) {
                 parseConfiguration(event.Message!!)
@@ -88,12 +117,12 @@ open class MyUI : UI() {
         }
     }
 
-    fun startContainer() {
-        wsHandler.sendCommand(Command(CommandTypes.StartContainer, ""))
+    fun startContainer(agentName: String) {
+        agentService.sendCommand(Command(CommandTypes.StartContainer, ""), agentName)
     }
 
-    fun stopContainer() {
-        wsHandler.sendCommand(Command(CommandTypes.StopContainer, ""))
+    fun stopContainer(agentName: String) {
+        agentService.sendCommand(Command(CommandTypes.StopContainer, ""), agentName)
     }
 
     private fun parseConfiguration(config: String) {
