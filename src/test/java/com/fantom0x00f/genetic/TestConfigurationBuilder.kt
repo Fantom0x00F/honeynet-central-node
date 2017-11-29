@@ -1,12 +1,13 @@
 package com.fantom0x00f.genetic
 
+import com.fantom0x00f.entity.NetworkConfiguration
 import com.fantom0x00f.entity.NodeGroup
 import com.fantom0x00f.network.impls.NetworkServiceImpl
 import java.util.*
 
-class TestConfigurationBuilder(private val countForSearch: Int) {
+class TestConfigurationBuilder(private val countForSearch: Int, private val thresholdNodes: Int) {
 
-    fun getTestNetwork(groupsCount: Int): List<NodeGroup> {
+    fun getTestNetwork(groupsCount: Int): NetworkConfiguration {
         val networkService = NetworkServiceImpl()
         val result = mutableListOf<NodeGroup>()
         val random = Random()
@@ -21,6 +22,11 @@ class TestConfigurationBuilder(private val countForSearch: Int) {
                 networkService.linkNodes(newGroup, *adjGroups)
             }
         }
-        return result
+        result.forEach { it.nodesCount = random.nextInt(thresholdNodes * it.adjacents.size) }
+
+        networkService.setInputNode(result.minBy { nodeGroup -> nodeGroup.adjacents.size }!!.id)
+        networkService.makeVulnerable(result[random.nextInt(result.size)].id)
+
+        return networkService.getNetworkConfiguration()
     }
 }

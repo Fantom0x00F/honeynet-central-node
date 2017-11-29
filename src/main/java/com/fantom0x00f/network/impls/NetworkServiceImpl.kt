@@ -1,5 +1,6 @@
 package com.fantom0x00f.network.impls
 
+import com.fantom0x00f.entity.NetworkConfiguration
 import com.fantom0x00f.entity.NodeGroup
 import com.fantom0x00f.network.NetworkService
 import org.springframework.stereotype.Service
@@ -9,6 +10,8 @@ class NetworkServiceImpl : NetworkService {
 
     private var groupsCounter: Int = 0
     private val availableGroups: MutableList<NodeGroup> = mutableListOf()
+    private var inputNode: Int = -1
+    private val vulnerableNodes: MutableSet<Int> = mutableSetOf()
 
     override fun createNodeGroup(groupName: String): NodeGroup =
             NodeGroup(groupsCounter++, groupName).apply {
@@ -25,5 +28,16 @@ class NetworkServiceImpl : NetworkService {
             group.adjacents.add(it.id)
             it.adjacents.add(group.id)
         }
+    }
+
+    override fun getNetworkConfiguration(): NetworkConfiguration =
+            NetworkConfiguration(availableGroups, inputNode, vulnerableNodes.toList())
+
+    override fun makeVulnerable(nodeGroupId: Int) {
+        vulnerableNodes.add(nodeGroupId)
+    }
+
+    override fun setInputNode(nodeGroupId: Int) {
+        inputNode = nodeGroupId
     }
 }
