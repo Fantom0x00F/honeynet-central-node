@@ -10,7 +10,7 @@ class TestConfigurationBuilder(private val countForSearch: Int) {
         val networkService = NetworkServiceImpl()
         val result = mutableListOf<NodeGroup>()
         val random = Random()
-        for (i in 0..groupsCount) {
+        for (i in 0 until groupsCount) {
             val newGroup = networkService.createNodeGroup("Nodes $i")
             result.add(newGroup)
             val linkedGroups = random.nextInt(countForSearch)
