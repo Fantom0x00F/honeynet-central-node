@@ -40,7 +40,7 @@ fun persist(network: NetworkConfiguration, fileName: String) {
 }
 
 
-fun load(fileName: String): List<NodeGroup> {
+fun load(fileName: String): NetworkConfiguration {
     val networkService = NetworkServiceImpl()
     val result = mutableListOf<NodeGroup>()
 
@@ -67,5 +67,5 @@ fun load(fileName: String): List<NodeGroup> {
     for (i in 0 until nodesCount) {
         networkService.linkNodes(result[i], *reader.readLine().split(";").map { Integer.parseInt(it) }.toIntArray())
     }
-    return result
+    return networkService.getNetworkConfiguration()
 }
