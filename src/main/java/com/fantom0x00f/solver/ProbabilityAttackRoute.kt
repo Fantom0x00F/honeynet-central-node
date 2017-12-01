@@ -2,9 +2,16 @@ package com.fantom0x00f.solver
 
 import com.fantom0x00f.entity.NetworkConfiguration
 import com.fantom0x00f.entity.NodeGroup
+import com.fantom0x00f.solver.genetic.HoneysDistribution
 import java.util.*
 
-fun getProbability(networkConfiguration: NetworkConfiguration): Double {
+fun getProbability(networkConfiguration: NetworkConfiguration): Double = getProbability(networkConfiguration,
+        HoneysDistribution(
+                networkConfiguration.nodeGroups.map { nG -> nG.availableAgents.filter { it.enabled }.size }.toIntArray(),
+                networkConfiguration.nodeGroups.map { nG -> nG.availableAgents.size }.toIntArray()
+        ))
+
+fun getProbability(networkConfiguration: NetworkConfiguration, honeysDistribution: HoneysDistribution): Double {
     val idToIndex = mutableMapOf<Int, Int>()
     val idToNode = mutableMapOf<Int, NodeGroup>()
     networkConfiguration.nodeGroups.forEachIndexed { i, nG -> idToIndex[nG.id] = i }
@@ -13,12 +20,12 @@ fun getProbability(networkConfiguration: NetworkConfiguration): Double {
     val graph: Array<List<Edge>> = networkConfiguration.nodeGroups.map { nG ->
         nG.adjacents.map { adj ->
             val to = idToNode[adj]!!
-            val honeypots = to.availableAgents.filter { it.enabled }.size.toDouble()
+            val honeypots = honeysDistribution.enables[idToIndex[adj]!!].toDouble()
             Edge(idToIndex[adj]!!, 1 - honeypots / (to.nodesCount + honeypots))
         }.toList()
     }.toTypedArray()
 
-    val result = find_costs(graph, idToIndex[networkConfiguration.inputNodeId]!!)
+    val result = findCosts(graph, idToIndex[networkConfiguration.inputNodeId]!!)
     val mostVulnerable = networkConfiguration.vulnerableNodeIds.minBy { result[idToIndex[it]!!] }!!
 
     return result[idToIndex[mostVulnerable]!!]
@@ -27,7 +34,7 @@ fun getProbability(networkConfiguration: NetworkConfiguration): Double {
 
 private class Edge(var to: Int, var weight: Double)
 
-private fun find_costs(adjList: Array<List<Edge>>, startNode: Int): DoubleArray {
+private fun findCosts(adjList: Array<List<Edge>>, startNode: Int): DoubleArray {
     val result = DoubleArray(adjList.size)
     result.fill(Double.MAX_VALUE)
     result[startNode] = 0.0
