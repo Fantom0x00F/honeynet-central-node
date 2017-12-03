@@ -9,11 +9,13 @@ class HoneypotProblem(private val networkConfiguration: NetworkConfiguration, pr
     override fun getName(): String = "HoneypotProblem"
 
     override fun evaluate(solution: HoneypotSolution) {
-        solution.setObjective(0, 1 - getProbability(networkConfiguration, solution.honeysDistribution))
-        solution.setObjective(1, solution.honeysDistribution.enables.sum().toDouble())
+        val probability = 1 - getProbability(networkConfiguration, solution.honeysDistribution)
+        val agents = solution.honeysDistribution.enables.sum().toDouble()
+        solution.setObjective(0, probability + agents / 1e5)
+        solution.setObjective(1, agents)
     }
 
-    override fun getNumberOfObjectives(): Int = 2
+    override fun getNumberOfObjectives(): Int = 1
 
     override fun getNumberOfVariables(): Int = 0
 

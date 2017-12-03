@@ -21,7 +21,7 @@ object DistributionSolver {
 
 
         val genetic = NSGAIIBuilder<HoneypotSolution>(honeypotProblem, crossover, mutation)
-                .setPopulationSize(1000)
+                .setPopulationSize(100)
                 .setMaxEvaluations(100000)
                 .setSolutionListEvaluator(evaluator)
                 .build()
