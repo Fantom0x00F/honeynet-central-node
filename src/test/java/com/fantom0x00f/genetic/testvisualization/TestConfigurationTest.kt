@@ -1,17 +1,18 @@
 package com.fantom0x00f.genetic.testvisualization
 
 import com.fantom0x00f.entity.Agent
-import com.fantom0x00f.genetic.load
+import com.fantom0x00f.entity.NetworkConfiguration
+import com.fantom0x00f.genetic.TestConfigurationBuilder
 import com.fantom0x00f.solver.DistributionSolver
 import com.fantom0x00f.solver.getProbability
 import org.junit.Test
+import javax.swing.JFrame
 
 class TestConfigurationTest {
 
     @Test
     fun test() {
-//        val testNetwork = TestConfigurationBuilder(1, 25).getTestNetwork(30)
-        val testNetwork = load("test_data/case3")
+        val testNetwork = TestConfigurationBuilder(25).getLayeredNetwork(10, 3)
         var totalAgents = 0
         testNetwork.nodeGroups.forEach { nG ->
             val agentsCount = nG.nodesCount * 20 / 100
@@ -20,7 +21,6 @@ class TestConfigurationTest {
                 val newAgent = Agent()
                 nG.availableAgents.add(newAgent)
                 newAgent.enabled = true
-//                newAgent.enabled = Math.random() > 0.5
             }
         }
         println("Вероятность попадания: " + getProbability(testNetwork))
@@ -32,22 +32,61 @@ class TestConfigurationTest {
         println("Решение:")
         println("Вероятность попадания: " + getProbability(testNetwork))
         println("Использовано агентов: " + testNetwork.nodeGroups.sumBy { it.availableAgents.filter { it.enabled }.count() })
-
-//        val frame = Visual(testNetwork)
-//        frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-//        frame.setSize(500, 500)
-//        frame.isVisible = true
-//        persist(testNetwork, "variant1")
-//        while (true) {
-//            Thread.sleep(1000)
-//        }
     }
 
-//    fun perebot(networkConfiguration: NetworkConfiguration) {
-//        networkConfiguration.nodeGroups.forEach { nG ->
-//            nG.availableAgents[0].enabled = false
-//            println("Вероятность попадания: " + getProbability(networkConfiguration))
-//            nG.availableAgents[0].enabled = true
+//    @Test
+//    fun brute() {
+//        val out1 = PrintWriter(FileWriter("diagramm_by_prob"))
+//        val out2 = PrintWriter(FileWriter("diagramm_by_all"))
+//
+//        var i = 0
+//        while (i < 1000) {
+//            val testNetwork = TestConfigurationBuilder(1, 25).getLayeredNetwork(7, 3)
+//            enableAllAgents(testNetwork)
+//            val initialProbability = getProbability(testNetwork)
+//            if (initialProbability > 1) {
+//                continue
+//            }
+//
+//            val (probability, bestByProbIteration, iteration) = DistributionSolver.solve(testNetwork)
+//            if (probability != initialProbability) {
+//                System.err.println(" Не найден оптимум")
+//                persist(testNetwork, "test_cases/bas${ThreadLocalRandom.current().nextDouble()}")
+//                continue
+//            }
+//            out1.println(bestByProbIteration)
+//            out2.println(iteration)
+//            out1.flush()
+//            out2.flush()
+//            i++
+//            println("Solved $i on iteration $bestByProbIteration/$iteration")
 //        }
+//
+//        out1.flush()
+//        out2.flush()
+//        out1.close()
+//        out2.close()
 //    }
+
+    private fun enableAllAgents(networkConfiguration: NetworkConfiguration) {
+        networkConfiguration.nodeGroups.forEach { nG ->
+            val agentsCount = nG.nodesCount * 20 / 100
+            nG.availableAgents.clear()
+            (1..agentsCount).forEach {
+                val newAgent = Agent()
+                nG.availableAgents.add(newAgent)
+                newAgent.enabled = true
+            }
+        }
+    }
+
+    fun view(networkConfiguration: NetworkConfiguration) {
+        val frame = Visual(networkConfiguration)
+        frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        frame.setSize(700, 700)
+        frame.isVisible = true
+        while (true) {
+            Thread.sleep(1000)
+        }
+    }
 }

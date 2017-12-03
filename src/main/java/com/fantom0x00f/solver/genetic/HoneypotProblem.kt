@@ -12,7 +12,6 @@ class HoneypotProblem(private val networkConfiguration: NetworkConfiguration, pr
         val probability = 1 - getProbability(networkConfiguration, solution.honeysDistribution)
         val agents = solution.honeysDistribution.enables.sum().toDouble()
         solution.setObjective(0, probability + agents / 1e5)
-        solution.setObjective(1, agents)
     }
 
     override fun getNumberOfObjectives(): Int = 1

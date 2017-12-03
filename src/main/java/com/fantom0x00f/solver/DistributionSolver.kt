@@ -5,10 +5,8 @@ import com.fantom0x00f.solver.genetic.HoneypotProblem
 import com.fantom0x00f.solver.genetic.HoneypotSolution
 import com.fantom0x00f.solver.genetic.InitialSolutionGenerator
 import com.fantom0x00f.solver.genetic.operators.DistributionCrossover
-import com.fantom0x00f.solver.genetic.operators.EvaluatorWithStatistics
 import com.fantom0x00f.solver.genetic.operators.Mutation
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
-import org.uma.jmetal.util.evaluator.impl.SequentialSolutionListEvaluator
 
 object DistributionSolver {
 
@@ -17,13 +15,11 @@ object DistributionSolver {
         val honeypotProblem = HoneypotProblem(networkConfiguration, initialSolutionGenerator)
         val crossover = DistributionCrossover()
         val mutation = Mutation()
-        val evaluator = EvaluatorWithStatistics(SequentialSolutionListEvaluator<HoneypotSolution>())
 
 
         val genetic = NSGAIIBuilder<HoneypotSolution>(honeypotProblem, crossover, mutation)
                 .setPopulationSize(100)
                 .setMaxEvaluations(100000)
-                .setSolutionListEvaluator(evaluator)
                 .build()
 
         genetic.run()

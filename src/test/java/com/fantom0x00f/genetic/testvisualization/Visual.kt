@@ -14,22 +14,35 @@ class Visual(networkConfiguration: NetworkConfiguration) : JFrame("Hello") {
         graph.model.beginUpdate()
         try {
             val nodes = networkConfiguration.nodeGroups
-            val vertexes = nodes.map {
-                val nodeName = if (networkConfiguration.inputNodeId == it.id) {
-                    "I"
-                } else {
-                    if (networkConfiguration.vulnerableNodeIds.contains(it.id)) {
-                        "V"
-                    } else {
-                        ""
-                    }
-                }
-                graph.insertVertex(parent, null, nodeName, Math.random() * 500, Math.random() * 500, 10.0, 10.0)
-            }.toList()
+            val layers = listOf(
+                    listOf(nodes.find { it.id == networkConfiguration.inputNodeId }!!),
+                    nodes.filter { it.name.contains("Group 0") }.toList(),
+                    nodes.filter { it.name.contains("Group 1") }.toList(),
+                    nodes.filter { it.name.contains("Group 2") }.toList()
+            )
+            assert(layers.map { it.size }.sum() == nodes.size)
 
-            nodes.forEachIndexed { index, node ->
+            val vertexes = mutableMapOf<Int, Any>()
+
+            layers.forEachIndexed { index, list ->
+                list.forEach {
+                    val nodeName = if (networkConfiguration.inputNodeId == it.id) {
+                        "I"
+                    } else {
+                        if (networkConfiguration.vulnerableNodeIds.contains(it.id)) {
+                            "V"
+                        } else {
+                            ""
+                        }
+                    }
+                    vertexes[it.id] = graph.insertVertex(parent, null, nodeName, Math.random() * 500, index * 200 + Math.random() * 100, 20.0, 20.0)
+                }
+            }
+
+
+            nodes.forEach { node ->
                 node.adjacents.forEach { adj ->
-                    graph.insertEdge(parent, null, "", vertexes[index], vertexes[adj])
+                    graph.insertEdge(parent, null, "", vertexes[node.id], vertexes[adj])
                 }
             }
         } finally {
