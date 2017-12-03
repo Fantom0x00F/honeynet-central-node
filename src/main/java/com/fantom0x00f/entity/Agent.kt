@@ -9,4 +9,5 @@ class Agent {
     var secret: String = ""
     var responseSecret: String = ""
     var establishedSession: WebSocketSession? = null
+    var enabled: Boolean = false
 }
